@@ -1,6 +1,6 @@
 {
   "name": "regex-scanner",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "A security-focused regex scanner for JavaScript/TypeScript that detects, validates, and analyzes regex patterns for ReDoS vulnerabilities",
   "main": "dist/index.js",
   "module": "index.ts",
