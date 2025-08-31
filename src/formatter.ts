@@ -2,6 +2,12 @@ import chalk from 'chalk'
 import type { RegexMatch, SecurityIssue, OutputFormat } from './types'
 import { HEADER_TITLE, NO_PATTERNS_FOUND, LABELS, SEVERITY_ORDER, CSV_HEADERS } from './constants'
 
+/**
+ * Formats regex scan results into the specified output format
+ * @param matches Array of regex matches to format
+ * @param format Output format (table, json, or csv)
+ * @returns Formatted string output
+ */
 export function formatResults(matches: RegexMatch[], format: OutputFormat): string {
   switch (format) {
     case 'json':
@@ -14,6 +20,11 @@ export function formatResults(matches: RegexMatch[], format: OutputFormat): stri
   }
 }
 
+/**
+ * Formats regex matches as a human-readable table with colors
+ * @param matches Array of regex matches to format
+ * @returns Colorized table format string
+ */
 function formatAsTable(matches: RegexMatch[]): string {
   if (matches.length === 0) {
     return chalk.green(NO_PATTERNS_FOUND)
@@ -54,6 +65,11 @@ function formatAsTable(matches: RegexMatch[]): string {
   return output.join('\n')
 }
 
+/**
+ * Formats regex matches as CSV (Comma-Separated Values)
+ * @param matches Array of regex matches to format
+ * @returns CSV format string with headers and escaped values
+ */
 function formatAsCsv(matches: RegexMatch[]): string {
   const rows = matches.map((match) => [
     `"${match.pattern.replace(/"/g, '""')}"`,
@@ -70,6 +86,11 @@ function formatAsCsv(matches: RegexMatch[]): string {
   return [CSV_HEADERS.join(','), ...rows.map((row) => row.join(','))].join('\n')
 }
 
+/**
+ * Gets a colored validity indicator for a regex match
+ * @param match The regex match to evaluate
+ * @returns Colored string indicating SAFE, UNSAFE, or INVALID
+ */
 function getValidityIndicator(match: RegexMatch): string {
   if (!match.isValid) {
     return chalk.red('INVALID')
@@ -84,6 +105,11 @@ function getValidityIndicator(match: RegexMatch): string {
   return chalk.green('SAFE')
 }
 
+/**
+ * Gets a colored security severity indicator for the highest severity issue
+ * @param match The regex match to evaluate
+ * @returns Colored string indicating highest severity level, or empty if safe
+ */
 function getSecurityIndicator(match: RegexMatch): string {
   if (match.securityIssues.length === 0) {
     return '' // No additional indicator needed when safe
@@ -103,6 +129,11 @@ function getSecurityIndicator(match: RegexMatch): string {
   }
 }
 
+/**
+ * Gets the appropriate chalk color function for a security issue severity
+ * @param severity The security issue severity level
+ * @returns Chalk color function for the severity
+ */
 function getSeverityColor(severity: SecurityIssue['severity']) {
   switch (severity) {
     case 'critical':
@@ -117,6 +148,11 @@ function getSeverityColor(severity: SecurityIssue['severity']) {
   }
 }
 
+/**
+ * Determines the highest severity level among security issues
+ * @param issues Array of security issues to evaluate
+ * @returns String representing the maximum severity level, or 'none' if no issues
+ */
 function getMaxSeverity(issues: SecurityIssue[]): string {
   if (issues.length === 0) return 'none'
 
