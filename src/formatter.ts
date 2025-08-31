@@ -1,7 +1,5 @@
 import chalk from 'chalk'
-import type { RegexMatch, SecurityIssue } from './scanner.js'
-
-export type OutputFormat = 'table' | 'json' | 'csv'
+import type { RegexMatch, SecurityIssue, OutputFormat } from './types'
 
 export function formatResults(matches: RegexMatch[], format: OutputFormat): string {
   switch (format) {

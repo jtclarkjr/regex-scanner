@@ -6,10 +6,10 @@ import {
   scanDirectory,
   scanFile,
   validateRegex,
-  analyzeSecurityIssues,
-  type RegexMatch
+  analyzeSecurityIssues
 } from './scanner.js'
-import { formatResults, type OutputFormat } from './formatter.js'
+import { formatResults } from './formatter.js'
+import type { RegexMatch, OutputFormat } from './types'
 
 const program = new Command()
 
