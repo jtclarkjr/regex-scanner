@@ -1,5 +1,6 @@
 import chalk from 'chalk'
 import type { RegexMatch, SecurityIssue, OutputFormat } from './types'
+import { HEADER_TITLE, NO_PATTERNS_FOUND, LABELS, SEVERITY_ORDER, CSV_HEADERS } from './constants'
 
 export function formatResults(matches: RegexMatch[], format: OutputFormat): string {
   switch (format) {
@@ -15,35 +16,35 @@ export function formatResults(matches: RegexMatch[], format: OutputFormat): stri
 
 function formatAsTable(matches: RegexMatch[]): string {
   if (matches.length === 0) {
-    return chalk.green('No regex patterns found')
+    return chalk.green(NO_PATTERNS_FOUND)
   }
 
   const output: string[] = []
 
-  output.push(chalk.bold.underline('Regex Security Scan Results'))
+  output.push(chalk.bold.underline(HEADER_TITLE))
   output.push('')
 
   matches.forEach((match, index) => {
     const header = `${index + 1}. ${getValidityIndicator(match)} ${getSecurityIndicator(match)}`
     output.push(chalk.bold(header))
 
-    output.push(`   ${chalk.dim('Pattern:')} ${chalk.cyan(match.pattern)}`)
-    output.push(`   ${chalk.dim('Location:')} ${match.file}:${match.line}:${match.column}`)
-    output.push(`   ${chalk.dim('Context:')} ${chalk.gray(match.context)}`)
+    output.push(`   ${chalk.dim(LABELS.pattern + ':')} ${chalk.cyan(match.pattern)}`)
+    output.push(`   ${chalk.dim(LABELS.location + ':')} ${match.file}:${match.line}:${match.column}`)
+    output.push(`   ${chalk.dim(LABELS.context + ':')} ${chalk.gray(match.context)}`)
 
     if (!match.isValid && match.validationError) {
-      output.push(`   ${chalk.red('Validation Error:')} ${match.validationError}`)
+      output.push(`   ${chalk.red(LABELS.validationError + ':')} ${match.validationError}`)
     }
 
     if (match.securityIssues.length > 0) {
-      output.push(`   ${chalk.yellow('Security Issues:')}`)
+      output.push(`   ${chalk.yellow(LABELS.securityIssues + ':')}`)
       match.securityIssues.forEach((issue, issueIndex) => {
         const severityColor = getSeverityColor(issue.severity)
         output.push(
           `      ${issueIndex + 1}. ${severityColor(issue.severity.toUpperCase())} - ${issue.type}`
         )
         output.push(`         ${issue.description}`)
-        output.push(`         Recommendation: ${chalk.dim(issue.recommendation)}`)
+        output.push(`         ${LABELS.recommendation}: ${chalk.dim(issue.recommendation)}`)
       })
     }
 
@@ -54,18 +55,6 @@ function formatAsTable(matches: RegexMatch[]): string {
 }
 
 function formatAsCsv(matches: RegexMatch[]): string {
-  const headers = [
-    'Pattern',
-    'File',
-    'Line',
-    'Column',
-    'Valid',
-    'ValidationError',
-    'SecurityIssues',
-    'MaxSeverity',
-    'Context'
-  ]
-
   const rows = matches.map((match) => [
     `"${match.pattern.replace(/"/g, '""')}"`,
     `"${match.file}"`,
@@ -78,7 +67,7 @@ function formatAsCsv(matches: RegexMatch[]): string {
     `"${match.context.replace(/"/g, '""')}"`
   ])
 
-  return [headers.join(','), ...rows.map((row) => row.join(','))].join('\n')
+  return [CSV_HEADERS.join(','), ...rows.map((row) => row.join(','))].join('\n')
 }
 
 function getValidityIndicator(match: RegexMatch): string {
@@ -131,8 +120,8 @@ function getSeverityColor(severity: SecurityIssue['severity']) {
 function getMaxSeverity(issues: SecurityIssue[]): string {
   if (issues.length === 0) return 'none'
 
-  const severityOrder = ['low', 'medium', 'high', 'critical']
-  let maxSeverity = 'low'
+  const severityOrder = SEVERITY_ORDER as readonly string[]
+  let maxSeverity: string = 'low'
 
   for (const issue of issues) {
     if (severityOrder.indexOf(issue.severity) > severityOrder.indexOf(maxSeverity)) {

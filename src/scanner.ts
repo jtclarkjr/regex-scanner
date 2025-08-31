@@ -1,17 +1,17 @@
 import { readFileSync } from 'fs'
 import { glob } from 'glob'
 import type { RegexMatch, SecurityIssue } from './types'
-
-const REGEX_PATTERNS = [
-  // JavaScript/TypeScript regex literals
-  /\/(?![*+?])(?:[^\r\n[/\\]|\\.|\[(?:[^\r\n\]\\]|\\.)*\])+\/[gimsuyx]*/g,
-  // new RegExp() constructor calls
-  /new\s+RegExp\s*\(\s*['"`]([^'"`]+)['"`]/g,
-  // RegExp() function calls
-  /RegExp\s*\(\s*['"`]([^'"`]+)['"`]/g,
-  // String.match(), String.replace(), String.split() with regex
-  /\.(?:match|replace|split)\s*\(\s*\/([^/]+)\/[gimsuyx]*/g
-]
+import {
+  REGEX_PATTERNS,
+  CATASTROPHIC_BACKTRACKING_PATTERNS,
+  EXCESSIVE_QUANTIFIER_PATTERNS,
+  ALTERNATION_PATTERN,
+  GREEDY_QUANTIFIERS_PATTERN,
+  DANGEROUS_BOUNDARIES_PATTERN,
+  QUANTIFIER_PATTERN,
+  SECURITY_ISSUE_TEMPLATES,
+  DEFAULT_EXTENSIONS
+} from './constants'
 
 /**
  * Extracts the actual regex pattern from a match
@@ -57,28 +57,14 @@ function getValidationError(pattern: string): string {
  * Checks for catastrophic backtracking patterns
  */
 function hasCatastrophicBacktracking(pattern: string): boolean {
-  // Look for patterns like (a+)+, (a*)*, (a+)*, etc.
-  const catastrophicPatterns = [
-    /\([^)]*[+*]\)[+*]/, // (something+)+ or (something*)*
-    /\([^)]*\{[^}]*,\s*\}[^)]*\)[+*]/, // (something{n,})+
-    /\([^)]*[+*][^)]*\)\{[^}]*,\s*\}/ // (something+){n,}
-  ]
-
-  return catastrophicPatterns.some((p) => p.test(pattern))
+  return CATASTROPHIC_BACKTRACKING_PATTERNS.some((p) => p.test(pattern))
 }
 
 /**
  * Checks for excessive quantifiers that could lead to ReDoS
  */
 function hasExcessiveQuantifiers(pattern: string): boolean {
-  // Look for multiple consecutive quantifiers or high repetition counts
-  const excessivePatterns = [
-    /[+*?]\{[^}]*[5-9]\d+/, // Quantifiers with high repetition counts (50+)
-    /[+*?][+*?]/, // Consecutive quantifiers
-    /\{[^}]*,\s*\}[+*?]/ // Unbounded quantifier followed by another quantifier
-  ]
-
-  return excessivePatterns.some((p) => p.test(pattern))
+  return EXCESSIVE_QUANTIFIER_PATTERNS.some((p) => p.test(pattern))
 }
 
 /**
@@ -98,13 +84,13 @@ function hasNestedQuantifiers(pattern: string): boolean {
       hasQuantifierAtCurrentDepth = false
     } else if (char === ')') {
       // Check if this group is followed by a quantifier
-      if (nextChar && /[+*?{]/.test(nextChar)) {
+      if (nextChar && QUANTIFIER_PATTERN.test(nextChar)) {
         if (hasQuantifierAtCurrentDepth) {
           return true // Found nested quantifiers
         }
       }
       depth--
-    } else if (depth > 0 && char && /[+*?{]/.test(char)) {
+    } else if (depth > 0 && char && QUANTIFIER_PATTERN.test(char)) {
       hasQuantifierAtCurrentDepth = true
     }
   }
@@ -117,14 +103,13 @@ function hasNestedQuantifiers(pattern: string): boolean {
  */
 function isVulnerableToReDoS(pattern: string): boolean {
   // Look for alternation with overlapping matches
-  const alternationPattern = /\([^)]*\|[^)]*\)/
-  const hasAlternation = alternationPattern.test(pattern)
+  const hasAlternation = ALTERNATION_PATTERN.test(pattern)
 
   // Look for greedy quantifiers
-  const hasGreedyQuantifiers = /[+*]\??/.test(pattern)
+  const hasGreedyQuantifiers = GREEDY_QUANTIFIERS_PATTERN.test(pattern)
 
   // Look for word boundaries that might be exploited
-  const hasPotentiallyDangerousBoundaries = /\.\*/.test(pattern)
+  const hasPotentiallyDangerousBoundaries = DANGEROUS_BOUNDARIES_PATTERN.test(pattern)
 
   return hasAlternation && hasGreedyQuantifiers && hasPotentiallyDangerousBoundaries
 }
@@ -139,10 +124,7 @@ export function analyzeSecurityIssues(pattern: string): SecurityIssue[] {
   if (hasCatastrophicBacktracking(pattern)) {
     issues.push({
       type: 'catastrophic_backtracking',
-      severity: 'critical',
-      description: 'Pattern contains nested quantifiers that can cause catastrophic backtracking',
-      recommendation:
-        'Avoid nested quantifiers like (a+)+ or (a*)* that can lead to exponential time complexity'
+      ...SECURITY_ISSUE_TEMPLATES.catastrophic_backtracking
     })
   }
 
@@ -150,10 +132,7 @@ export function analyzeSecurityIssues(pattern: string): SecurityIssue[] {
   if (hasExcessiveQuantifiers(pattern)) {
     issues.push({
       type: 'excessive_quantifiers',
-      severity: 'high',
-      description: 'Pattern contains quantifiers that could lead to ReDoS attacks',
-      recommendation:
-        'Consider using more specific patterns or atomic groups to prevent backtracking'
+      ...SECURITY_ISSUE_TEMPLATES.excessive_quantifiers
     })
   }
 
@@ -161,10 +140,7 @@ export function analyzeSecurityIssues(pattern: string): SecurityIssue[] {
   if (hasNestedQuantifiers(pattern)) {
     issues.push({
       type: 'nested_quantifiers',
-      severity: 'medium',
-      description: 'Pattern contains nested quantifiers which can be exploited',
-      recommendation:
-        'Rewrite pattern to avoid nesting quantifiers inside other quantified groups'
+      ...SECURITY_ISSUE_TEMPLATES.nested_quantifiers
     })
   }
 
@@ -172,11 +148,7 @@ export function analyzeSecurityIssues(pattern: string): SecurityIssue[] {
   if (isVulnerableToReDoS(pattern)) {
     issues.push({
       type: 'redos',
-      severity: 'high',
-      description:
-        'Pattern is potentially vulnerable to Regular Expression Denial of Service (ReDoS)',
-      recommendation:
-        'Review pattern for alternation with overlapping paths and excessive quantifiers'
+      ...SECURITY_ISSUE_TEMPLATES.redos
     })
   }
 
@@ -243,7 +215,7 @@ export function scanFile(filePath: string): RegexMatch[] {
  */
 export async function scanDirectory(
   directory: string,
-  extensions: string[] = ['**/*.{js,ts,jsx,tsx,vue}']
+  extensions: string[] = DEFAULT_EXTENSIONS
 ): Promise<RegexMatch[]> {
   const matches: RegexMatch[] = []
 
