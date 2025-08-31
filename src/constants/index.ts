@@ -3,7 +3,7 @@ import type { SecurityIssue } from '../types'
 // Regex patterns used to detect regex usage in source code
 export const REGEX_PATTERNS = [
   // JavaScript/TypeScript regex literals
-  /\/(?![*+?])(?:[^\r\n[/\\]|\\.|\\[(?:[^\r\n\\]\\]|\\.)*\\])+\/[gimsuyx]*/g,
+  /\/(?![*+?])(?:[^\r\n[/\\]|\\.|\[(?:[^\r\n\]\\]|\\.)*\])+\/[gimsuyx]*/g,
   // new RegExp() constructor calls
   /new\s+RegExp\s*\(\s*['"`]([^'"`]+)['"`]/g,
   // RegExp() function calls
