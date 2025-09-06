@@ -79,19 +79,24 @@ function hasNestedQuantifiers(pattern: string): boolean {
     const char = pattern[i]
     const nextChar = pattern[i + 1]
 
-    if (char === '(') {
-      depth++
-      hasQuantifierAtCurrentDepth = false
-    } else if (char === ')') {
-      // Check if this group is followed by a quantifier
-      if (nextChar && QUANTIFIER_PATTERN.test(nextChar)) {
-        if (hasQuantifierAtCurrentDepth) {
-          return true // Found nested quantifiers
+    switch (char) {
+      case '(':
+        depth++
+        hasQuantifierAtCurrentDepth = false
+        break
+        
+      case ')':
+        if (nextChar && QUANTIFIER_PATTERN.test(nextChar) && hasQuantifierAtCurrentDepth) {
+          return true // Found nested quantifiers: quantifier inside a quantified group
         }
-      }
-      depth--
-    } else if (depth > 0 && char && QUANTIFIER_PATTERN.test(char)) {
-      hasQuantifierAtCurrentDepth = true
+        depth--
+        break
+        
+      default:
+        if (depth > 0 && char && QUANTIFIER_PATTERN.test(char)) {
+          hasQuantifierAtCurrentDepth = true
+        }
+        break
     }
   }
 
