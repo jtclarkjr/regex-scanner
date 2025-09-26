@@ -4,12 +4,12 @@ A powerful Bun TypeScript package that scans codebases for regex patterns, valid
 
 ## Features
 
-- 🔍 **JavaScript/TypeScript Focus**: Detects regex patterns in JS, TS, JSX, TSX, and Vue files
-- ✅ **Validation**: Checks if regex patterns are syntactically correct
-- 🛡️ **Security Analysis**: Identifies potential ReDoS vulnerabilities and other security issues
-- 📊 **Multiple Output Formats**: Table, JSON, and CSV output formats
-- 🎯 **Filtering Options**: Filter by severity, validity, or security issues
-- 🚀 **Fast Scanning**: Built with Bun for optimal performance
+- **JavaScript/TypeScript Focus**: Detects regex patterns in JS, TS, JSX, TSX, and Vue files
+- **Validation**: Checks if regex patterns are syntactically correct
+- **Security Analysis**: Identifies potential ReDoS vulnerabilities and other security issues
+- **Multiple Output Formats**: Table, JSON, and CSV output formats
+- **Filtering Options**: Filter by severity, validity, or security issues
+- **Fast Scanning**: Built with Bun for optimal performance
 
 ## Installation
 
